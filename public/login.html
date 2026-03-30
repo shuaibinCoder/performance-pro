@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>绩效管理系统 · 登录</title>
+  <link href="/vendor/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="/css/style.css" rel="stylesheet">
+</head>
+<body class="login-bg">
+
+<!-- 加载提示（自动登录时显示） -->
+<div id="loading-tip" style="text-align:center;color:white;display:none">
+  <div style="font-size:3rem;margin-bottom:16px"><i class="bi bi-bar-chart-fill"></i></div>
+  <div style="font-weight:700;font-size:1.3rem;margin-bottom:6px">绩效管理系统</div>
+  <div style="opacity:.7;font-size:.9rem" id="loading-text">正在验证登录状态...</div>
+</div>
+
+<!-- 登录表单 -->
+<div id="login-section" style="display:none">
+  <div class="login-card">
+    <div style="text-align:center;margin-bottom:28px">
+      <div style="font-size:2.5rem;color:#4F46E5;margin-bottom:10px"><i class="bi bi-bar-chart-fill"></i></div>
+      <h3 style="font-weight:800;color:#1E293B;margin:0 0 4px">绩效管理系统</h3>
+      <p style="color:#64748B;font-size:.875rem;margin:0">Performance Management System</p>
+    </div>
+
+    <!-- 注销成功提示 -->
+    <div id="logout-tip" style="display:none;background:#F0FDF4;border:1px solid #BBF7D0;color:#15803D;padding:10px 14px;border-radius:8px;font-size:.875rem;margin-bottom:16px">
+      <i class="bi bi-check-circle-fill me-1"></i>已安全退出，请重新登录
+    </div>
+
+    <!-- 错误提示 -->
+    <div id="alert-box" style="display:none;background:#FFF1F2;border:1px solid #FECDD3;color:#BE123C;padding:10px 14px;border-radius:8px;font-size:.875rem;margin-bottom:16px"></div>
+
+    <!-- 登录表单 -->
+    <div id="form-section">
+      <form id="login-form">
+        <div style="margin-bottom:14px">
+          <label class="form-label">邮箱</label>
+          <div style="position:relative">
+            <i class="bi bi-envelope" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#94A3B8"></i>
+            <input type="email" id="email" class="form-control" style="padding-left:32px" placeholder="请输入邮箱" required autocomplete="username">
+          </div>
+        </div>
+        <div style="margin-bottom:20px">
+          <label class="form-label">密码</label>
+          <div style="position:relative">
+            <i class="bi bi-lock" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#94A3B8"></i>
+            <input type="password" id="password" class="form-control" style="padding-left:32px;padding-right:38px" placeholder="请输入密码" required autocomplete="current-password">
+            <button type="button" id="toggle-pwd" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#94A3B8;padding:0">
+              <i class="bi bi-eye" id="pwd-eye"></i>
+            </button>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary w-100" id="login-btn" style="justify-content:center;padding:10px">
+          <span id="spinner" style="display:none;width:16px;height:16px;border:2px solid rgba(255,255,255,.4);border-top-color:white;border-radius:50%;animation:spin .7s linear infinite;margin-right:6px"></span>
+          <span id="btn-text">登 录</span>
+        </button>
+      </form>
+    </div>
+
+    <!-- 修改密码表单（切换显示） -->
+    <div id="change-pwd-section" style="display:none">
+      <form id="change-pwd-form">
+        <div style="margin-bottom:12px">
+          <label class="form-label">当前密码</label>
+          <input type="password" id="old-pwd" class="form-control" placeholder="请输入当前密码" required autocomplete="current-password">
+        </div>
+        <div style="margin-bottom:12px">
+          <label class="form-label">新密码</label>
+          <input type="password" id="new-pwd" class="form-control" placeholder="至少 6 位" required autocomplete="new-password">
+        </div>
+        <div style="margin-bottom:20px">
+          <label class="form-label">确认新密码</label>
+          <input type="password" id="confirm-pwd" class="form-control" placeholder="再次输入新密码" required autocomplete="new-password">
+        </div>
+        <div style="display:flex;gap:10px">
+          <button type="button" class="btn btn-secondary" style="flex:1;justify-content:center" onclick="showLoginForm()">返回登录</button>
+          <button type="submit" class="btn btn-primary" style="flex:1;justify-content:center" id="change-btn">确认修改</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- 演示账号快捷登录 -->
+    <div style="margin-top:20px;padding:16px;background:#F8FAFC;border-radius:10px;border:1px solid #E2E8F0">
+      <p style="font-size:.78rem;font-weight:700;color:#64748B;margin:0 0 10px"><i class="bi bi-info-circle me-1"></i>演示账号（密码均为 123456）</p>
+      <div class="demo-account-item" onclick="quickLogin('admin@company.com')">
+        <span style="background:#FEE2E2;color:#DC2626;font-size:.72rem;font-weight:700;padding:2px 8px;border-radius:4px">HR管理员</span>
+        <span style="color:#64748B;font-size:.8rem;flex:1">admin@company.com</span>
+        <i class="bi bi-lightning-fill" style="color:#94A3B8;font-size:.9rem"></i>
+      </div>
+      <div class="demo-account-item" onclick="quickLogin('zhang.wei@company.com')">
+        <span style="background:#EEF2FF;color:#4F46E5;font-size:.72rem;font-weight:700;padding:2px 8px;border-radius:4px">部门经理</span>
+        <span style="color:#64748B;font-size:.8rem;flex:1">zhang.wei@company.com</span>
+        <i class="bi bi-lightning-fill" style="color:#94A3B8;font-size:.9rem"></i>
+      </div>
+      <div class="demo-account-item" onclick="quickLogin('li.ming@company.com')">
+        <span style="background:#DCFCE7;color:#16A34A;font-size:.72rem;font-weight:700;padding:2px 8px;border-radius:4px">普通员工</span>
+        <span style="color:#64748B;font-size:.8rem;flex:1">li.ming@company.com</span>
+        <i class="bi bi-lightning-fill" style="color:#94A3B8;font-size:.9rem"></i>
+      </div>
+    </div>
+
+    <!-- 修改密码入口 -->
+    <div style="text-align:center;margin-top:14px">
+      <button type="button" onclick="showChangePwd()" style="background:none;border:none;color:#64748B;font-size:.78rem;cursor:pointer;text-decoration:underline;font-family:inherit">
+        <i class="bi bi-key me-1"></i>修改密码
+      </button>
+    </div>
+  </div>
+</div>
+
+<style>
+  @keyframes spin { to { transform: rotate(360deg) } }
+  .login-bg { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+</style>
+
+<script>
+const params = new URLSearchParams(window.location.search);
+const justLoggedOut = params.get('logout') === '1';
+
+async function init() {
+  const token = localStorage.getItem('token');
+
+  // 有 token 且不是主动注销 → 验证 token 有效性
+  if (token && !justLoggedOut) {
+    document.getElementById('loading-tip').style.display = 'block';
+    try {
+      const me = await fetch('/api/auth/me', {
+        headers: { 'Authorization': 'Bearer ' + token }
+      }).then(r => r.ok ? r.json() : null);
+      if (me) {
+        localStorage.setItem('user', JSON.stringify(me));
+        window.location.href = '/app';
+        return;
+      }
+    } catch(e) {}
+    localStorage.clear();
+  }
+
+  // 注销后 or token 失效 → 直接展示登录表单
+  document.getElementById('loading-tip').style.display = 'none';
+  document.getElementById('login-section').style.display = '';
+  if (justLoggedOut) {
+    document.getElementById('logout-tip').style.display = 'block';
+    // 清除 URL 参数，避免刷新时重复显示
+    history.replaceState({}, '', '/');
+  }
+}
+init();
+
+// ── 快速登录（点击演示账号一键登录） ──
+async function quickLogin(email) {
+  const btn = event.currentTarget;
+  btn.style.opacity = '0.6';
+  try {
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password: '123456' })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || '登录失败');
+    localStorage.setItem('token', data.token);
+    localStorage.setItem('user', JSON.stringify(data.user));
+    window.location.href = '/app';
+  } catch(err) {
+    btn.style.opacity = '1';
+    showAlert(err.message);
+  }
+}
+
+// ── 邮箱 + 密码登录 ──
+document.getElementById('login-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById('login-btn');
+  const spinner = document.getElementById('spinner');
+  const btnText = document.getElementById('btn-text');
+  btn.disabled = true;
+  spinner.style.display = 'inline-block';
+  btnText.textContent = '登录中...';
+  hideAlert();
+  try {
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: document.getElementById('email').value.trim(),
+        password: document.getElementById('password').value
+      })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || '登录失败');
+    localStorage.setItem('token', data.token);
+    localStorage.setItem('user', JSON.stringify(data.user));
+    window.location.href = '/app';
+  } catch(err) {
+    showAlert(err.message);
+  } finally {
+    btn.disabled = false;
+    spinner.style.display = 'none';
+    btnText.textContent = '登 录';
+  }
+});
+
+// ── 密码可见切换 ──
+document.getElementById('toggle-pwd').addEventListener('click', () => {
+  const input = document.getElementById('password');
+  const eye = document.getElementById('pwd-eye');
+  if (input.type === 'password') {
+    input.type = 'text';
+    eye.className = 'bi bi-eye-slash';
+  } else {
+    input.type = 'password';
+    eye.className = 'bi bi-eye';
+  }
+});
+
+// ── 修改密码 ──
+function showChangePwd() {
+  document.getElementById('form-section').style.display = 'none';
+  document.getElementById('change-pwd-section').style.display = '';
+  hideAlert();
+  document.getElementById('logout-tip').style.display = 'none';
+}
+function showLoginForm() {
+  document.getElementById('change-pwd-section').style.display = 'none';
+  document.getElementById('form-section').style.display = '';
+  hideAlert();
+}
+
+document.getElementById('change-pwd-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const oldPwd = document.getElementById('old-pwd').value;
+  const newPwd = document.getElementById('new-pwd').value;
+  const confirmPwd = document.getElementById('confirm-pwd').value;
+  if (newPwd.length < 6) { showAlert('新密码至少 6 位'); return; }
+  if (newPwd !== confirmPwd) { showAlert('两次输入的密码不一致'); return; }
+
+  // 必须先知道是哪个用户 → 要求先填邮箱（从 login form 读取，或要求重新填）
+  const emailEl = document.getElementById('email');
+  const email = emailEl.value.trim();
+  if (!email) {
+    showLoginForm();
+    showAlert('请先填写邮箱，再点击修改密码');
+    return;
+  }
+
+  const btn = document.getElementById('change-btn');
+  btn.disabled = true;
+  btn.textContent = '修改中...';
+  try {
+    const res = await fetch('/api/auth/change-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, old_password: oldPwd, new_password: newPwd })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || '修改失败');
+    showLoginForm();
+    document.getElementById('logout-tip').style.display = 'none';
+    showSuccess('密码修改成功，请重新登录');
+    // 预填邮箱方便登录
+    document.getElementById('email').value = email;
+    document.getElementById('password').value = '';
+  } catch(err) {
+    showAlert(err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '确认修改';
+  }
+});
+
+function showAlert(msg) {
+  const el = document.getElementById('alert-box');
+  el.textContent = msg;
+  el.style.display = 'block';
+  document.getElementById('logout-tip').style.display = 'none';
+}
+function showSuccess(msg) {
+  const el = document.getElementById('alert-box');
+  el.style.cssText = 'display:block;background:#F0FDF4;border:1px solid #BBF7D0;color:#15803D;padding:10px 14px;border-radius:8px;font-size:.875rem;margin-bottom:16px';
+  el.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i>' + msg;
+}
+function hideAlert() {
+  document.getElementById('alert-box').style.display = 'none';
+}
+</script>
+</body>
+</html>

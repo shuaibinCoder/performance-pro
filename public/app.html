@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>绩效管理系统</title>
+  <link href="/vendor/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="/css/style.css" rel="stylesheet">
+</head>
+<body>
+
+<!-- Demo 切换栏 -->
+<div id="demo-bar">
+  <i class="bi bi-easel2-fill" style="color:#818CF8;font-size:.9rem"></i>
+  <span class="demo-label">演示模式 · 切换身份：</span>
+  <button class="demo-role-btn" id="btn-hr" onclick="switchRole('hr')">HR 管理员</button>
+  <button class="demo-role-btn" id="btn-manager" onclick="switchRole('manager')">研发经理</button>
+  <button class="demo-role-btn" id="btn-employee" onclick="switchRole('employee')">普通员工</button>
+</div>
+
+<!-- 全屏 loading 遮罩 -->
+<div id="page-cover">
+  <div style="text-align:center;color:#4F46E5">
+    <div class="spin-ring"></div>
+    <div style="font-size:.875rem;color:#64748B">加载中...</div>
+  </div>
+</div>
+
+<!-- Vue 应用 -->
+<div id="app">
+  <nav class="sidebar" v-if="user">
+    <div class="sidebar-brand">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="background:rgba(99,102,241,.2);width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center">
+          <i class="bi bi-bar-chart-fill" style="color:#818CF8;font-size:1rem"></i>
+        </div>
+        <div>
+          <h6>绩效管理</h6>
+          <small>Performance Pro</small>
+        </div>
+      </div>
+    </div>
+    <div class="sidebar-nav">
+      <p class="nav-section-label">工作台</p>
+      <div class="nav-link-item" :class="{active:view==='dashboard'}" @click="view='dashboard'">
+        <i class="bi bi-grid-1x2-fill"></i> 首页概览
+      </div>
+      <div class="nav-link-item" :class="{active:view==='goals'}" @click="view='goals'">
+        <i class="bi bi-bullseye"></i> 目标管理
+      </div>
+      <div class="nav-link-item" :class="{active:view==='reviews'}" @click="view='reviews'">
+        <i class="bi bi-clipboard-check-fill"></i> 绩效评估
+        <span class="nav-badge" v-if="pendingCount>0">{{pendingCount}}</span>
+      </div>
+      <div class="nav-link-item" :class="{active:view==='feedback'}" @click="view='feedback'">
+        <i class="bi bi-chat-heart-fill"></i> 360 反馈
+      </div>
+      <div class="nav-link-item" :class="{active:view==='oneOnOne'}" @click="view='oneOnOne'">
+        <i class="bi bi-people-fill"></i> 1-on-1 面谈
+      </div>
+      <div class="nav-link-item" :class="{active:view==='profile'}" @click="view='profile'">
+        <i class="bi bi-person-badge-fill"></i> 个人档案
+      </div>
+      <template v-if="isManagerOrHR">
+        <p class="nav-section-label">管理</p>
+        <div class="nav-link-item" :class="{active:view==='reports'}" @click="view='reports'">
+          <i class="bi bi-graph-up-arrow"></i> 数据报表
+        </div>
+        <div class="nav-link-item" :class="{active:view==='calibration'}" @click="view='calibration'">
+          <i class="bi bi-sliders"></i> 绩效校准
+        </div>
+      </template>
+      <template v-if="isHR">
+        <p class="nav-section-label">后台</p>
+        <div class="nav-link-item" :class="{active:view==='employees'}" @click="view='employees'">
+          <i class="bi bi-people"></i> 员工管理
+        </div>
+        <div class="nav-link-item" :class="{active:view==='cycles'}" @click="view='cycles'">
+          <i class="bi bi-calendar-range-fill"></i> 周期管理
+        </div>
+      </template>
+    </div>
+    <div class="sidebar-footer">
+      <div class="user-card" @click="view='profile'">
+        <div class="avatar" :style="{background: user.avatar_color}">{{user.name[0]}}</div>
+        <div style="flex:1;min-width:0">
+          <div class="user-name">{{user.name}}</div>
+          <div class="user-role-dept">{{roleLabel}} · {{user.dept_name}}</div>
+        </div>
+        <i class="bi bi-box-arrow-right" style="color:#475569;font-size:.9rem;cursor:pointer" @click.stop="logout" title="退出"></i>
+      </div>
+    </div>
+  </nav>
+
+  <div class="main-content" v-if="user">
+    <div class="topbar">
+      <div class="topbar-title">
+        <i :class="viewIcon" style="color:#4F46E5"></i>
+        {{viewTitle}}
+      </div>
+      <div class="topbar-right">
+        <div class="cycle-tag" v-if="activeCycle">
+          <i class="bi bi-calendar3 me-1"></i>{{activeCycle.name}} · 进行中
+        </div>
+        <div class="cycle-tag" style="opacity:0.5" v-else>
+          <i class="bi bi-calendar3 me-1"></i>暂无进行中周期
+        </div>
+        <div class="notif-btn" @click="view='notifications'">
+          <i class="bi bi-bell-fill" style="font-size:1.1rem;color:#64748B"></i>
+          <span class="notif-dot" v-if="unreadCount>0"></span>
+        </div>
+      </div>
+    </div>
+    <div class="page-body">
+      <component :is="currentView" :user="user" :is-hr="isHR" :is-manager="isManagerOrHR" :active-cycle="activeCycle" @navigate="view=$event"></component>
+    </div>
+  </div>
+
+  <!-- Toast容器 -->
+  <div id="toast-container" style="position:fixed;top:calc(42px + 16px);right:20px;z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none"></div>
+</div>
+
+<script src="/vendor/vue.global.prod.js"></script>
+<script src="/vendor/chart.umd.min.js"></script>
+<script src="/js/api.js"></script>
+<script src="/js/main.js"></script>
+<script>
+// 高亮当前角色按钮
+(function(){
+  const user = JSON.parse(localStorage.getItem('user') || 'null');
+  if (!user) return;
+  const map = { hr:'btn-hr', manager:'btn-manager', employee:'btn-employee' };
+  document.getElementById(map[user.role])?.classList.add('active');
+})();
+
+async function switchRole(role) {
+  const cover = document.getElementById('page-cover');
+  if (cover) { cover.style.opacity = '1'; cover.style.display = 'flex'; }
+  try {
+    const data = await fetch('/api/auth/demo-login?role=' + role).then(r => r.json());
+    localStorage.setItem('token', data.token);
+    localStorage.setItem('user', JSON.stringify(data.user));
+    window.location.href = window.location.pathname + '?_=' + Date.now();
+  } catch(e) {
+    if (cover) cover.style.display = 'none';
+    alert('切换失败，请检查服务器是否运行');
+  }
+}
+</script>
+</body>
+</html>

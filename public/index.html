@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>绩效管理系统</title>
+  <link href="/vendor/bootstrap.min.css" rel="stylesheet">
+  <link href="/vendor/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="/css/style.css" rel="stylesheet">
+  <style>
+    /* Demo bar */
+    #demo-bar { position:fixed;top:0;left:0;right:0;z-index:2000;background:#1E1B4B;color:#E2E8F0;height:42px;display:flex;align-items:center;padding:0 16px;gap:8px;font-size:.8rem; }
+    .demo-role-btn { padding:3px 12px;border-radius:20px;border:1px solid rgba(255,255,255,.3);background:transparent;color:#E2E8F0;cursor:pointer;font-size:.75rem;transition:all .2s; }
+    .demo-role-btn:hover,.demo-role-btn.active { background:rgba(255,255,255,.2);border-color:rgba(255,255,255,.6);color:#fff; }
+    .demo-label { color:#94A3B8;margin-right:4px; }
+    /* 布局补偿 */
+    .sidebar { top:42px !important; height:calc(100vh - 42px) !important; }
+    .main-content { padding-top:42px; }
+    .topbar { top:42px !important; }
+    /* 全屏 loading 遮罩 */
+    #page-cover {
+      position:fixed; top:42px; left:0; right:0; bottom:0; z-index:1500;
+      background:#F8FAFC; display:flex; align-items:center; justify-content:center;
+      transition:opacity .25s ease;
+    }
+    #page-cover .spinner-wrap { text-align:center; color:#4F46E5; }
+    #page-cover .spin-ring {
+      width:40px; height:40px; border:3px solid #E2E8F0; border-top-color:#4F46E5;
+      border-radius:50%; animation:coverSpin .7s linear infinite; margin:0 auto 12px;
+    }
+    @keyframes coverSpin { to { transform:rotate(360deg) } }
+  </style>
+</head>
+<body>
+
+<!-- Demo 切换栏（始终可见）-->
+<div id="demo-bar">
+  <i class="bi bi-easel2-fill me-1" style="color:#818CF8"></i>
+  <span class="demo-label">演示模式 · 切换身份：</span>
+  <button class="demo-role-btn" id="btn-hr"       onclick="switchDemoRole('hr')">HR 管理员</button>
+  <button class="demo-role-btn" id="btn-manager"  onclick="switchDemoRole('manager')">研发经理</button>
+  <button class="demo-role-btn" id="btn-employee" onclick="switchDemoRole('employee')">普通员工</button>
+</div>
+
+<!-- 全屏 loading 遮罩（Vue 数据就绪后自动消失）-->
+<div id="page-cover">
+  <div class="spinner-wrap">
+    <div class="spin-ring"></div>
+    <div style="font-size:.875rem;color:#64748B">加载中...</div>
+  </div>
+</div>
+
+<!-- Vue 应用挂载点（不用 v-cloak）-->
+<div id="app">
+  <!-- 侧边栏 -->
+  <nav class="sidebar" v-if="user">
+    <div class="sidebar-brand">
+      <div class="d-flex align-items-center gap-2">
+        <i class="bi bi-bar-chart-fill text-white" style="font-size:1.5rem"></i>
+        <div>
+          <h6 class="mb-0">绩效管理</h6>
+          <small>Performance Pro</small>
+        </div>
+      </div>
+    </div>
+    <div class="sidebar-nav">
+      <div class="nav-group-title">工作台</div>
+      <a class="nav-item-link" :class="{active:view==='dashboard'}" @click="view='dashboard'" href="#">
+        <i class="bi bi-grid-1x2"></i> 首页概览
+      </a>
+      <a class="nav-item-link" :class="{active:view==='goals'}" @click="view='goals'" href="#">
+        <i class="bi bi-bullseye"></i> 目标管理
+      </a>
+      <a class="nav-item-link" :class="{active:view==='reviews'}" @click="view='reviews'" href="#">
+        <i class="bi bi-clipboard-check"></i> 绩效评估
+        <span class="nav-badge" v-if="pendingCount">{{pendingCount}}</span>
+      </a>
+      <a class="nav-item-link" :class="{active:view==='feedback'}" @click="view='feedback'" href="#">
+        <i class="bi bi-chat-heart"></i> 360反馈
+      </a>
+      <a class="nav-item-link" :class="{active:view==='profile'}" @click="view='profile'" href="#">
+        <i class="bi bi-person-badge"></i> 个人档案
+      </a>
+      <template v-if="isManagerOrHR">
+        <div class="nav-group-title">管理</div>
+        <a class="nav-item-link" :class="{active:view==='oneOnOne'}" @click="view='oneOnOne'" href="#">
+          <i class="bi bi-people-fill"></i> 1-on-1 面谈
+        </a>
+        <a class="nav-item-link" :class="{active:view==='calibration'}" @click="view='calibration'" href="#">
+          <i class="bi bi-sliders"></i> 绩效校准
+        </a>
+        <a class="nav-item-link" :class="{active:view==='reports'}" @click="view='reports'" href="#">
+          <i class="bi bi-graph-up-arrow"></i> 数据报表
+        </a>
+      </template>
+      <template v-if="isHR">
+        <div class="nav-group-title">后台管理</div>
+        <a class="nav-item-link" :class="{active:view==='employees'}" @click="view='employees'" href="#">
+          <i class="bi bi-people"></i> 员工管理
+        </a>
+        <a class="nav-item-link" :class="{active:view==='cycles'}" @click="view='cycles'" href="#">
+          <i class="bi bi-calendar-range"></i> 周期管理
+        </a>
+      </template>
+    </div>
+    <div class="sidebar-footer">
+      <div class="user-card" @click="view='profile'">
+        <div class="user-avatar" :style="{background:user.avatar_color||'#4F46E5'}">{{user.name[0]}}</div>
+        <div class="user-info ms-2">
+          <div class="user-name">{{user.name}}</div>
+          <div class="user-role">{{roleLabel}} · {{user.dept_name}}</div>
+        </div>
+        <i class="bi bi-box-arrow-right ms-auto text-white-50 small" @click.stop="logout" title="退出"></i>
+      </div>
+    </div>
+  </nav>
+
+  <!-- 主内容区 -->
+  <div class="main-content" v-if="user">
+    <div class="topbar">
+      <div class="topbar-title">
+        <i :class="viewIcon" class="me-2 text-primary"></i>{{viewTitle}}
+      </div>
+      <div class="d-flex align-items-center gap-3">
+        <span class="badge rounded-pill text-bg-primary px-3 py-2 small" v-if="activeCycle">
+          <i class="bi bi-calendar3 me-1"></i>{{activeCycle.name}} · 进行中
+        </span>
+        <span class="badge rounded-pill text-bg-secondary px-3 py-2 small" v-else>
+          <i class="bi bi-calendar3 me-1"></i>暂无进行中周期
+        </span>
+        <div class="position-relative cursor-pointer" @click="view='notifications'">
+          <i class="bi bi-bell fs-5 text-muted"></i>
+          <span class="notif-dot" v-if="unreadCount"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="page-content" :key="view">
+      <component :is="currentView" :user="user" :is-hr="isHR" :is-manager="isManagerOrHR" :active-cycle="activeCycle"></component>
+    </div>
+  </div>
+</div>
+
+<script src="/vendor/vue.global.prod.js"></script>
+<script src="/vendor/chart.umd.min.js"></script>
+<script src="/vendor/bootstrap.bundle.min.js"></script>
+<script src="/js/api.js"></script>
+<script src="/js/main.js"></script>
+<script>
+  // 高亮当前角色按钮
+  (function() {
+    const user = JSON.parse(localStorage.getItem('user') || 'null');
+    if (!user) return;
+    const map = { hr:'btn-hr', manager:'btn-manager', employee:'btn-employee' };
+    document.getElementById(map[user.role])?.classList.add('active');
+  })();
+
+  async function switchDemoRole(role) {
+    // 显示遮罩，防止切换过程中看到旧内容
+    const cover = document.getElementById('page-cover');
+    if (cover) { cover.style.opacity = '1'; cover.style.display = 'flex'; }
+    try {
+      const data = await fetch('/api/auth/demo-login?role=' + role).then(r => r.json());
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+      window.location.href = window.location.pathname + '?_=' + Date.now();
+    } catch(e) {
+      if (cover) cover.style.display = 'none';
+      alert('切换失败，请检查服务器');
+    }
+  }
+</script>
+</body>
+</html>
